@@ -1,14 +1,19 @@
 import pandas as pd
 from datetime import datetime
 import streamlit as st
+import gdown
 
-# Définir le fichier CSV local pour enregistrer les réponses
+# ID du fichier Google Drive
+file_id = "1hJvFX7xmJhUOBsuUbx1lw5Sf55Q3Vt8okspMHS5YX4Y"
+download_url = f"https://drive.google.com/uc?id={file_id}"
+
+# Télécharger le fichier CSV depuis Google Drive
 csv_file = "questionnaire_responses.csv"
-
-# Charger ou créer le fichier CSV
 try:
+    gdown.download(download_url, csv_file, quiet=False)
     questionnaire_df = pd.read_csv(csv_file)
-except FileNotFoundError:
+except Exception as e:
+    st.warning("Impossible de télécharger le fichier. Un fichier vierge sera créé.")
     questionnaire_df = pd.DataFrame(columns=["Date", "Nom", "Satisfaction (%)", "Commentaires"])
 
 st.title("Questionnaire de Satisfaction")
@@ -30,9 +35,16 @@ with st.form("questionnaire_form"):
         })
         # Concaténer les données
         questionnaire_df = pd.concat([questionnaire_df, new_response], ignore_index=True)
-        # Sauvegarder les données mises à jour dans le fichier CSV
+        # Sauvegarder les données mises à jour dans le fichier local
         questionnaire_df.to_csv(csv_file, index=False)
-        st.success("Merci pour votre retour !")
+        
+        # Réupload du fichier vers Google Drive
+        try:
+            gdown.upload(csv_file, file_id)
+            st.success("Merci pour votre retour ! Les données ont été mises à jour.")
+        except Exception as e:
+            st.error("Erreur lors de la mise à jour du fichier sur Google Drive.")
+            st.write(e)
 
 # Afficher les réponses existantes
 if not questionnaire_df.empty:
